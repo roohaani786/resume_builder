@@ -16,7 +16,10 @@ class ExportedResume extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ATS Resume Preview'),
+        title: const Text('ATS Resume Preview',
+        style: TextStyle(
+          color: Colors.white
+        ),),
         backgroundColor: Colors.deepPurple,
       ),
       body: SingleChildScrollView(
