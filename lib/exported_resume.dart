@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:intl/intl.dart'; // For date formatting
 
 class ExportedResume extends StatelessWidget {
   final Map<String, dynamic> userData;
@@ -33,8 +34,13 @@ class ExportedResume extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _downloadPdf(context),
-        label: const Text('Download PDF'),
-        icon: const Icon(Icons.download),
+        label: const Text('Download PDF',
+        style: TextStyle(
+          color: Colors.white
+        ),),
+        icon: const Icon(Icons.download,
+
+            color: Colors.white),
         backgroundColor: Colors.deepPurple,
       ),
     );
@@ -84,163 +90,397 @@ class ATSResumePreview extends StatelessWidget {
     required this.portfolioLinks,
   }) : super(key: key);
 
+  // Helper method to format dates
+  String formatDate(DateTime? date) {
+    if (date == null) return "Present";
+    try {
+      return DateFormat('MMMM yyyy').format(date);
+    } catch (e) {
+      return "Invalid Date";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Fancy resume preview layout
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Name & Contact
-        Text(
-          nameSection["fullName"] ?? "No Name",
-          style: Theme.of(context).textTheme.bodyLarge, // Ensure Flutter SDK supports headline5
-        ),
-        if (nameSection["email"] != null) Text("Email: ${nameSection["email"]}"),
-        if (nameSection["phone"] != null) Text("Phone: ${nameSection["phone"]}"),
+    // Define common text styles
+    TextStyle sectionHeaderStyle = TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      color: Colors.blueGrey.shade700,
+    );
 
-        const SizedBox(height: 16),
-        // Summary
-        Text(
-          "Summary:",
-          style: Theme.of(context).textTheme.bodySmall, // Ensure Flutter SDK supports subtitle1
-        ),
-        Text(summarySection["summaryText"] ?? ""),
+    TextStyle subsectionHeaderStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      color: Colors.blueGrey.shade600,
+    );
 
-        const SizedBox(height: 16),
-        // Dev Skills
-        Text(
-          "Skills:",
-          style: Theme.of(context).textTheme.bodySmall, // Ensure Flutter SDK supports subtitle1
-        ),
-        Wrap(
-          children: List<Widget>.from(
-            (devSkillsSection["skills"] as List<dynamic>? ?? [])
-                .map(
-                  (skill) => Container(
-                margin: const EdgeInsets.all(4),
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
+    TextStyle normalTextStyle = TextStyle(
+      fontSize: 14,
+      color: Colors.black87,
+    );
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ---------------------------
+          // Name & Contact Information
+          // ---------------------------
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  nameSection["fullName"] ?? "No Name Provided",
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey.shade800,
+                  ),
                 ),
-                child: Text(skill),
-              ),
+                const SizedBox(height: 8),
+                Text(
+                  nameSection["email"] ?? "Email not provided",
+                  style: normalTextStyle.copyWith(color: Colors.blue),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  nameSection["phone"] ?? "Phone not provided",
+                  style: normalTextStyle,
+                ),
+                const SizedBox(height: 4),
+                if (portfolioLinks.isNotEmpty)
+                  Wrap(
+                    spacing: 8,
+                    children: portfolioLinks.map((link) {
+                      return GestureDetector(
+                        onTap: () {
+                          // Implement URL launch if needed
+                        },
+                        child: Text(
+                          link,
+                          style: normalTextStyle.copyWith(
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+              ],
             ),
           ),
-        ),
+          const Divider(height: 32, thickness: 1.2),
 
-        const SizedBox(height: 16),
-        // Experience
-        Text(
-          "Experience:",
-          style: Theme.of(context).textTheme.bodyLarge, // Ensure Flutter SDK supports subtitle1
-        ),
-        ...experienceSection.map((exp) {
-          final roles = exp["roles"] as List<dynamic>? ?? [];
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "${exp["companyName"]} - ${exp["jobTitle"]}",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  "From: ${exp["from"]} To: ${exp["isCurrent"] == true ? "Present" : exp["to"]}",
-                ),
-                if (exp["description"] != null) Text(exp["description"]),
-                if (roles.isNotEmpty)
-                  const Text(
-                    "Roles:",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+          // ---------------------------
+          // Professional Summary Section
+          // ---------------------------
+          Text(
+            "Professional Summary",
+            style: sectionHeaderStyle,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            summarySection["summaryText"] ?? "Summary not provided.",
+            style: normalTextStyle,
+            textAlign: TextAlign.justify,
+          ),
+          const SizedBox(height: 24),
+
+          // ---------------------------
+          // Technical Skills Section
+          // ---------------------------
+          Text(
+            "Technical Skills",
+            style: sectionHeaderStyle,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: List<Widget>.from(
+              (devSkillsSection["skills"] as List<dynamic>? ?? [])
+                  .map(
+                    (skill) => Chip(
+                  label: Text(
+                    skill,
+                    style: TextStyle(color: Colors.blueGrey.shade800),
                   ),
-                ...roles.map((role) {
-                  return Text("• ${role["title"]} - ${role["description"]}");
-                }),
-              ],
+                  backgroundColor: Colors.blueGrey.shade100,
+                ),
+              )
+                  .toList(),
             ),
-          );
-        }),
+          ),
+          const SizedBox(height: 24),
 
-        const SizedBox(height: 16),
-        // Education
-        Text(
-          "Education:",
-          style: Theme.of(context).textTheme.bodyLarge, // Ensure Flutter SDK supports subtitle1
-        ),
-        ...educationSection.map((edu) {
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
+          // ---------------------------
+          // Work Experience Section
+          // ---------------------------
+          Text(
+            "Work Experience",
+            style: sectionHeaderStyle,
+          ),
+          const SizedBox(height: 8),
+          ...experienceSection.map((exp) {
+            List<dynamic> roles = exp["roles"] as List<dynamic>? ?? [];
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Company and Job Title with Dates
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          exp["jobTitle"] ?? "Job Title",
+                          style: subsectionHeaderStyle,
+                        ),
+                      ),
+                      Text(
+                        "${formatDate(exp["from"])} – ${exp["isCurrent"] == true ? 'Present' : formatDate(exp["to"])}",
+                        style: normalTextStyle.copyWith(
+                          color: Colors.blueGrey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    exp["companyName"] ?? "Company Name",
+                    style: normalTextStyle.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    exp["description"] ?? "",
+                    style: normalTextStyle,
+                    textAlign: TextAlign.justify,
+                  ),
+                  const SizedBox(height: 8),
+                  if (roles.isNotEmpty)
+                    Text(
+                      "Key Responsibilities:",
+                      style: subsectionHeaderStyle,
+                    ),
+                  if (roles.isNotEmpty)
+                    ...roles.map((role) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text("• "),
+                            Expanded(
+                              child: Text(
+                                "${role["title"]} - ${role["description"]}",
+                                style: normalTextStyle,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                ],
+              ),
+            );
+          }).toList(),
+          const SizedBox(height: 24),
+
+          // ---------------------------
+          // Education Section
+          // ---------------------------
+          Text(
+            "Education",
+            style: sectionHeaderStyle,
+          ),
+          const SizedBox(height: 8),
+          ...educationSection.map((edu) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Degree and Institution
+                  Text(
+                    "${edu["degree"] ?? "Degree"} in ${edu["field"] ?? "Field of Study"}",
+                    style: subsectionHeaderStyle,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    edu["institution"] ?? "Institution Name",
+                    style: normalTextStyle.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    "Graduated: ${formatDate(edu["graduationDate"])}",
+                    style: normalTextStyle.copyWith(
+                      color: Colors.blueGrey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if (edu["gpa"] != null && edu["gpa"].toString().isNotEmpty)
+                    Text(
+                      "GPA: ${edu["gpa"]}",
+                      style: normalTextStyle,
+                    ),
+                  if (edu["insights"] != null &&
+                      edu["insights"].toString().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        "Highlights: ${edu["insights"]}",
+                        style: normalTextStyle,
+                        textAlign: TextAlign.justify,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
+          const SizedBox(height: 24),
+
+          // ---------------------------
+          // Certifications Section
+          // ---------------------------
+          Text(
+            "Certifications",
+            style: sectionHeaderStyle,
+          ),
+          const SizedBox(height: 8),
+          ...certList.map((cert) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("• "),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          cert["name"] ?? "Certification Name",
+                          style: normalTextStyle.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (cert["link"] != null && cert["link"]!.isNotEmpty)
+                          Text(
+                            "Link: ${cert["link"]}",
+                            style: normalTextStyle.copyWith(
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          const SizedBox(height: 24),
+
+          // ---------------------------
+          // Projects Section
+          // ---------------------------
+          Text(
+            "Projects",
+            style: sectionHeaderStyle,
+          ),
+          const SizedBox(height: 8),
+          ...projectsList.map((proj) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("• "),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          proj["name"] ?? "Project Name",
+                          style: normalTextStyle.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (proj["description"] != null &&
+                            proj["description"]!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2.0),
+                            child: Text(
+                              proj["description"]!,
+                              style: normalTextStyle,
+                              textAlign: TextAlign.justify,
+                            ),
+                          ),
+                        if (proj["link"] != null && proj["link"]!.isNotEmpty)
+                          Text(
+                            "Link: ${proj["link"]}",
+                            style: normalTextStyle.copyWith(
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          const SizedBox(height: 24),
+
+          // ---------------------------
+          // Portfolio Links Section
+          // ---------------------------
+          if (portfolioLinks.isNotEmpty)
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${edu["degree"]} at ${edu["institution"]}",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  "Portfolio & Links",
+                  style: sectionHeaderStyle,
                 ),
-                Text("Grading: ${edu["gradingSystem"]} - ${edu["gpa"]}"),
-                if (edu["insights"] != null && edu["insights"].toString().isNotEmpty)
-                  Text("Insights: ${edu["insights"]}"),
+                const SizedBox(height: 8),
+                ...portfolioLinks.map((link) {
+                  return Row(
+                    children: [
+                      const Icon(
+                        Icons.link,
+                        size: 16,
+                        color: Colors.blueGrey,
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          // Implement URL launch if needed
+                        },
+                        child: Text(
+                          link,
+                          style: normalTextStyle.copyWith(
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
               ],
             ),
-          );
-        }),
-
-        const SizedBox(height: 16),
-        // Certifications
-        Text(
-          "Certifications:",
-          style: Theme.of(context).textTheme.bodyLarge, // Ensure Flutter SDK supports subtitle1
-        ),
-        ...certList.map((cert) {
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  cert["name"] ?? "",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                if (cert["link"] != null && cert["link"]!.isNotEmpty)
-                  Text("Link: ${cert["link"]}"),
-              ],
-            ),
-          );
-        }),
-
-        const SizedBox(height: 16),
-        // Projects
-        Text(
-          "Projects:",
-          style: Theme.of(context).textTheme.bodyLarge, // Ensure Flutter SDK supports subtitle1
-        ),
-        ...projectsList.map((proj) {
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  proj["name"] ?? "",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                if (proj["link"] != null && proj["link"]!.isNotEmpty)
-                  Text("Link: ${proj["link"]}"),
-              ],
-            ),
-          );
-        }),
-
-        const SizedBox(height: 16),
-        // Portfolio Links
-        Text(
-          "Portfolio Links:",
-          style: Theme.of(context).textTheme.bodyMedium, // Ensure Flutter SDK supports subtitle1
-        ),
-        ...portfolioLinks.map((link) => Text("• $link")),
-      ],
+        ],
+      ),
     );
   }
 }
+

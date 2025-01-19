@@ -236,7 +236,7 @@ class _GuidedDevelopmentTemplateState extends State<GuidedDevelopmentTemplate> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
-                      'Please complete the required fields before proceeding. Save Info',
+                      'Please complete the required fields before proceeding.',
                       style: TextStyle(fontSize: 16),
                     ),
                     behavior: SnackBarBehavior.floating,
