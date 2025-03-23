@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:intl/intl.dart'; // For date formatting
+import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart'; // For date formatting
 
 class ExportedResume extends StatelessWidget {
   final Map<String, dynamic> userData;
@@ -36,7 +40,7 @@ class ExportedResume extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _downloadPdf(context),
+        onPressed: () => _downloadPdf(context,userData),
         label: const Text('Download PDF',
         style: TextStyle(
           color: Colors.white
@@ -49,8 +53,155 @@ class ExportedResume extends StatelessWidget {
     );
   }
 
-  Future<void> _downloadPdf(BuildContext context) async {
-    // PDF generation logic remains unchanged
+  Future<void> _downloadPdf(BuildContext context, Map<String, dynamic> userData) async {
+    try {
+      final pdf = pw.Document();
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('ATS Resume Preview',
+                    style: pw.TextStyle(
+                      fontSize: 24,
+                      fontWeight: pw.FontWeight.bold,
+                    )),
+                pw.SizedBox(height: 16),
+
+                // Name Section
+                _buildSectionTitle("Name"),
+                _buildText(userData["nameSection"]?["name"] ?? "N/A"),
+
+                // Summary Section
+                _buildSectionTitle("Summary"),
+                _buildText(userData["summarySection"]?["summary"] ?? "N/A"),
+
+                // Development Skills
+                _buildSectionTitle("Development Skills"),
+                _buildBulletList(userData["devSkillsSection"]?["skills"] as List<String>? ?? []),
+
+                // Experience
+                _buildSectionTitle("Experience"),
+                _buildExperience(userData["experienceSection"] as List<Map<String, dynamic>>? ?? []),
+
+                // Education
+                _buildSectionTitle("Education"),
+                _buildEducation(userData["educationSection"] as List<Map<String, dynamic>>? ?? []),
+
+                // Certifications
+                _buildSectionTitle("Certifications"),
+                _buildBulletList(userData["certificationsSection"]?["certifications"]
+                as List<String>? ??
+                    []),
+
+                // Projects
+                _buildSectionTitle("Projects"),
+                _buildBulletList(userData["certificationsSection"]?["projects"] as List<String>? ?? []),
+
+                // Portfolio Links
+                _buildSectionTitle("Portfolio Links"),
+                _buildBulletList(userData["certificationsSection"]?["portfolioLinks"] as List<String>? ?? []),
+              ],
+            );
+          },
+        ),
+      );
+
+      // Get a temporary directory
+      final output = await getTemporaryDirectory();
+      final filePath = "${output.path}/ats_resume_preview.pdf";
+      final file = File(filePath);
+
+      // Write the PDF file
+      await file.writeAsBytes(await pdf.save());
+
+      // Share the file
+      await Share.shareXFiles([XFile(filePath)], text: 'ATS Resume PDF');
+
+    } catch (e) {
+      print("Error generating PDF: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error generating PDF: $e')),
+      );
+    }
+  }
+
+// Title for each section
+  pw.Widget _buildSectionTitle(String title) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(top: 10, bottom: 4),
+      child: pw.Text(
+        title,
+        style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+      ),
+    );
+  }
+
+// Plain text
+  pw.Widget _buildText(String text) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(fontSize: 14),
+      ),
+    );
+  }
+
+// Bullet points for lists like skills, projects, portfolio
+  pw.Widget _buildBulletList(List<String> items) {
+    return items.isNotEmpty
+        ? pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: items.map((item) => pw.Bullet(text: item)).toList(),
+    )
+        : _buildText("N/A");
+  }
+
+// Experience Section
+  pw.Widget _buildExperience(List<Map<String, dynamic>> experiences) {
+    return experiences.isNotEmpty
+        ? pw.Column(
+      children: experiences.map((exp) {
+        return pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 8),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(exp["jobTitle"] ?? "Job Title",
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Text("${exp["company"] ?? "Company"} - ${exp["duration"] ?? "Duration"}"),
+              pw.Text(exp["description"] ?? "N/A"),
+            ],
+          ),
+        );
+      }).toList(),
+    )
+        : _buildText("No Experience Added");
+  }
+
+// Education Section
+  pw.Widget _buildEducation(List<Map<String, dynamic>> education) {
+    return education.isNotEmpty
+        ? pw.Column(
+      children: education.map((edu) {
+        return pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 8),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(edu["degree"] ?? "Degree",
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+              pw.Text("${edu["institution"] ?? "Institution"} - ${edu["year"] ?? "Year"}"),
+            ],
+          ),
+        );
+      }).toList(),
+    )
+        : _buildText("No Education Added");
   }
 
   // Helper method to sanitize experienceSection

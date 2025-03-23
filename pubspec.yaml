@@ -39,8 +39,13 @@ dependencies:
   google_fonts: ^6.2.1
   country_picker: ^2.0.27
   url_launcher: ^6.3.1
-  printing: ^5.13.4
+  printing: ^5.14.2
   syncfusion_flutter_datepicker: 27.1.48
+  path_provider: ^2.0.11
+  share_plus: ^10.1.4
+
+dependency_overrides:
+  win32: ^5.12.0
 
 dev_dependencies:
   flutter_test:
